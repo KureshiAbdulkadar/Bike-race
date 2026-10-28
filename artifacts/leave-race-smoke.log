@@ -1,0 +1,4 @@
+PASS · simultaneous leave ignores stale room updates
+08:32:19  PASS room 6MCG8M: two distinct clients and start gating
+08:32:22  PASS readiness, countdown, race HUD, and shared randomized road
+08:32:22  PASS · simultaneous leave ignores stale room updates

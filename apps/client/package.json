@@ -1,0 +1,15 @@
+{
+  "name": "@rival/client",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit -p tsconfig.json && vite build",
+    "preview": "vite preview --host 127.0.0.1"
+  },
+  "dependencies": {
+    "@babylonjs/core": "^9.32.1",
+    "@rival/shared": "*"
+  }
+}

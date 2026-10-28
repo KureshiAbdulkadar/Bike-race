@@ -1,0 +1,8 @@
+PASS · room → combat → draft/boost → two laps → identical results → rematch
+08:27:36  PASS room DCM2VT: two distinct clients and start gating
+08:27:39  PASS readiness, countdown, race HUD, and shared randomized road
+08:27:43  PASS matching-speed click-triggered contextual kick/punch telegraph and a Space counter
+08:27:48  PASS aligned drafting builds authoritative boost charge
+08:27:48  PASS boost consumes charge and increases speed
+08:30:25  PASS two laps and identical results: 1.  Smoke Blue157.42 s2.  Smoke Red157.60 s
+08:30:28  PASS both players rematch into a fresh race on a new shared road

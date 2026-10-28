@@ -1,0 +1,23 @@
+services:
+  server:
+    build:
+      context: .
+      target: server
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3001
+    expose:
+      - "3001"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      target: web
+      args:
+        VITE_ROOM_SERVER_URL: ${VITE_ROOM_SERVER_URL:-}
+    depends_on:
+      - server
+    ports:
+      - "${RIVAL_RIDING_PORT:-8080}:80"
+    restart: unless-stopped

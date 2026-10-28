@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Rival Riding — local browser smoke</title>
+<style>body{margin:0;padding:24px;background:#0c1528;color:#e3efff;font:14px system-ui}h1{font-size:22px}p{color:#a5b9d5}button{padding:12px 20px;background:#75eaff;border:0;border-radius:4px;cursor:pointer}button:disabled{opacity:.4}#status{margin:18px 0;font-weight:bold}#status[data-result=passed]{color:#86e5ae}#status[data-result=failed]{color:#ffa9b9}#clients{display:grid;grid-template-columns:1fr 1fr;gap:16px}iframe{width:100%;height:390px;border:1px solid #43536b;border-radius:5px}pre{white-space:pre-wrap;font-size:12px;line-height:1.8}small{color:#a5b9d5}</style>
+<h1>Rival Riding · actual browser flow</h1><p>Local QA fixture. It drives two real game clients through room creation, readiness, combat, drafting, boost, a full two-lap race, results, and rematch. A full run takes about three minutes.</p><button id="run">Run browser smoke</button><div id="status" role="status" data-result="idle">Not run</div><div id="clients"><iframe title="Host game client" id="host"></iframe><iframe title="Guest game client" id="guest"></iframe></div><pre id="log"></pre><small>This fixture is not a production game entry point. Drivers are test inputs, not gameplay AI.</small>
+<script type="module">
+const leaveMode = new URLSearchParams(location.search).get('mode') === 'leave';
+const quickMode = new URLSearchParams(location.search).get('mode') === 'quick';
+const runButton = document.querySelector('#run');
+if (quickMode) runButton.textContent = 'Run online bot-race smoke';
+const status = document.querySelector('#status');
+const output = document.querySelector('#log');
+const host = document.querySelector('#host');
+const guest = document.querySelector('#guest');
+const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const doc = (frame) => { const document = frame.contentDocument; if (!document) throw new Error('Game frame did not load'); return document; };
+const element = (frame, selector) => { const result = doc(frame).querySelector(selector); if (!result) throw new Error(`Missing ${selector}`); return result; };
+const log = (message) => { output.textContent += `${new Date().toLocaleTimeString()}  ${message}\n`; };
+const assert = (value, message) => { if (!value) throw new Error(message); };
+const waitFor = async (predicate, timeout = 10000, interval = 50) => { const start = performance.now(); while (!predicate()) { if (performance.now() - start > timeout) throw new Error('Timed out waiting for the next game state'); await pause(interval); } };
+const key = (frame, type, name) => frame.contentWindow.dispatchEvent(new frame.contentWindow.KeyboardEvent(type, { key: name, bubbles: true }));
+const tap = async (frame, name, ms = 120) => { key(frame, 'keydown', name); await pause(ms); key(frame, 'keyup', name); };
+const fill = (frame, selector, value) => { const input = element(frame, selector); input.value = value; input.dispatchEvent(new frame.contentWindow.Event('input', { bubbles: true })); };
+const speed = (frame) => Number(element(frame, '#speed-value').textContent);
+const charge = (frame) => Number.parseFloat(element(frame, '#boost-fill').style.width) || 0;
+const view = (frame) => element(frame, '#app').dataset.view;
+
+runButton.addEventListener('click', async () => {
+  runButton.disabled = true; output.textContent = ''; status.dataset.result = 'running'; status.textContent = 'Running actual clients…';
+  const savedName = localStorage.getItem('rival-riding.nickname');
+  const savedColor = localStorage.getItem('rival-riding.color');
+  let throttleTimer;
+  try {
+    if (quickMode) {
+      host.src = '/?qa=quick';
+      await waitFor(() => host.contentDocument?.querySelector('#app')?.dataset.connection === 'online', 30000);
+      fill(host, '#nickname', 'Smoke Online'); element(host, '#quick-race').click();
+      await waitFor(() => view(host) === 'ride');
+      assert([...doc(host).querySelectorAll('.player-badge')].filter((badge) => badge.textContent === 'BOT').length === 4, 'Quick race did not identify its four bots');
+      const road = element(host, '#map-road').getAttribute('d');
+      log('PASS Play online creates a five-rider grid with four labeled bots and a seeded road');
+      throttleTimer = setInterval(() => key(host, 'keydown', 'w'), 50);
+      await waitFor(() => speed(host) >= 100);
+      status.textContent = 'Driving the online bot race through both laps…';
+      await waitFor(() => view(host) === 'results', 270000, 250);
+      clearInterval(throttleTimer); throttleTimer = undefined; key(host, 'keyup', 'w');
+      assert(doc(host).querySelectorAll('#results-list li').length === 5, 'Quick-race results are incomplete');
+      assert([...doc(host).querySelectorAll('#results-list li')].filter((item) => item.textContent.includes('BOT')).length === 4, 'Bots not labeled in results');
+      log('PASS human and all four bots finished with complete results: '+element(host, '#results-list').textContent);
+      element(host, '#rematch').click();
+      await waitFor(() => view(host) === 'countdown' || view(host) === 'ride');
+      await waitFor(() => view(host) === 'ride');
+      assert(element(host, '#map-road').getAttribute('d') !== road, 'Quick rematch reused the same road');
+      element(host, '#open-menu').click();
+      status.dataset.result = 'passed'; status.textContent = 'PASS · Play online → four bots → two laps → five results → new-road rematch';
+      log(status.textContent); return;
+    }
+    host.src = '/?qa=host'; guest.src = '/?qa=guest';
+    await waitFor(() => host.contentDocument?.querySelector('#app')?.dataset.connection === 'online' && guest.contentDocument?.querySelector('#app')?.dataset.connection === 'online', 30000);
+    fill(host, '#nickname', 'Smoke Blue'); fill(guest, '#nickname', 'Smoke Red');
+    element(host, '[data-bike-color="#27bfff"]').click(); element(guest, '[data-bike-color="#f2315a"]').click();
+    element(host, '#friends-toggle').click(); element(guest, '#friends-toggle').click();
+    element(host, '#create-room').click();
+    await waitFor(() => view(host) === 'lobby');
+    const code = element(host, '#room-code-label').textContent;
+    fill(guest, '#room-code', code); element(guest, '#join-room').click();
+    await waitFor(() => view(guest) === 'lobby' && element(host, '#rider-count').textContent.startsWith('2'));
+    assert(element(host, '#start-race').disabled, 'Host started before guest was ready');
+    log(`PASS room ${code}: two distinct clients and start gating`);
+    element(guest, '#ready-up').click();
+    await waitFor(() => !element(host, '#start-race').disabled);
+    element(host, '#start-race').click();
+    await waitFor(() => view(host) === 'ride' && view(guest) === 'ride');
+    assert(element(host, '#lap-readout').textContent === 'LAP 1 OF 2', 'Wrong opening lap');
+    const firstRoad = element(host, '#map-road').getAttribute('d');
+    assert(firstRoad === element(guest, '#map-road').getAttribute('d'), 'Clients disagree on road geometry');
+    log('PASS readiness, countdown, race HUD, and shared randomized road');
+    if (leaveMode) {
+      element(host, '#open-menu').click(); element(guest, '#open-menu').click();
+      await waitFor(() => view(host) === 'home' && view(guest) === 'home');
+      await pause(500);
+      assert(view(host) === 'home' && view(guest) === 'home', 'Late room state reopened a departed race');
+      status.dataset.result = 'passed'; status.textContent = 'PASS · simultaneous leave ignores stale room updates'; log(status.textContent); return;
+    }
+    throttleTimer = setInterval(() => { key(host, 'keydown', 'w'); key(guest, 'keydown', 'w'); }, 50);
+    await waitFor(() => speed(host) >= 110 && speed(guest) >= 110);
+    await tap(host, 'd', 1000);
+    await waitFor(() => !element(host, '#combat-prompt').hidden && element(host, '#combat-prompt').textContent.includes('STRIKE'), 3000);
+    element(host, '#action-button').click();
+    await waitFor(() => !element(guest, '#combat-prompt').hidden && element(guest, '#combat-prompt').textContent.includes('COUNTER'), 1200, 10);
+    await tap(guest, ' ', 90);
+    await waitFor(() => element(guest, '#race-toast').textContent.includes('COUNTER LANDED'), 1800, 10);
+    log('PASS matching-speed click-triggered contextual kick/punch telegraph and a Space counter');
+    await tap(host, ' ', 800);
+    await tap(host, 'd', 300);
+    await tap(host, 's', 800);
+    await waitFor(() => charge(host) >= 45, 14000);
+    log('PASS aligned drafting builds authoritative boost charge');
+    const before = charge(host);
+    key(host, 'keydown', 'Shift');
+    await waitFor(() => speed(host) > 125 && charge(host) < before, 1800, 20);
+    await pause(500); key(host, 'keyup', 'Shift');
+    log('PASS boost consumes charge and increases speed');
+    status.textContent = 'Driving the complete two-lap race…';
+    await waitFor(() => view(host) === 'results' && view(guest) === 'results', 210000, 250);
+    clearInterval(throttleTimer); throttleTimer = undefined;
+    key(host, 'keyup', 'w'); key(guest, 'keyup', 'w');
+    const first = element(host, '#results-list').textContent;
+    const second = element(guest, '#results-list').textContent;
+    assert(first === second && doc(host).querySelectorAll('#results-list li').length === 2, 'Result order/time disagreement');
+    log(`PASS two laps and identical results: ${first}`);
+    element(host, '#rematch').click(); element(guest, '#rematch').click();
+    await waitFor(() => view(host) === 'countdown' || view(host) === 'ride');
+    await waitFor(() => view(host) === 'ride' && view(guest) === 'ride');
+    assert(element(host, '#lap-readout').textContent === 'LAP 1 OF 2', 'Rematch did not reset lap');
+    assert(element(host, '#map-road').getAttribute('d') !== firstRoad, 'Rematch reused the old road');
+    assert(element(host, '#map-road').getAttribute('d') === element(guest, '#map-road').getAttribute('d'), 'Rematch clients disagree on the new road');
+    log('PASS both players rematch into a fresh race on a new shared road');
+    element(host, '#open-menu').click(); element(guest, '#open-menu').click();
+    await waitFor(() => view(host) === 'home' && view(guest) === 'home');
+    await pause(500); assert(view(host) === 'home' && view(guest) === 'home', 'Late room state reopened a departed race');
+    status.dataset.result = 'passed'; status.textContent = 'PASS · room → combat → draft/boost → two laps → identical results → rematch';
+  } catch (error) {
+    status.dataset.result = 'failed'; status.textContent = `FAIL · ${error instanceof Error ? error.message : String(error)}`;
+    log(status.textContent);
+  } finally {
+    if (throttleTimer) clearInterval(throttleTimer);
+    for (const frame of [host, guest]) {
+      try { for (const name of ['w', 'd', 's', ' ', 'Shift']) key(frame, 'keyup', name); } catch { /* unloaded frame */ }
+    }
+    if (savedName === null) localStorage.removeItem('rival-riding.nickname'); else localStorage.setItem('rival-riding.nickname', savedName);
+    if (savedColor === null) localStorage.removeItem('rival-riding.color'); else localStorage.setItem('rival-riding.color', savedColor);
+    runButton.disabled = false;
+  }
+});
+</script></html>

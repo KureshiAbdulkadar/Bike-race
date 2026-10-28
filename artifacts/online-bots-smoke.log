@@ -1,0 +1,4 @@
+PASS · Play online → four bots → two laps → five results → new-road rematch
+08:23:09  PASS Play online creates a five-rider grid with four labeled bots and a seeded road
+08:25:45  PASS human and all four bots finished with complete results: 1.  Vex · BOT157.58 s2.  Axle · BOT157.62 s3.  Blaze · BOT157.63 s4.  Nova · BOT157.65 s5.  Smoke Online158.57 s
+08:25:47  PASS · Play online → four bots → two laps → five results → new-road rematch

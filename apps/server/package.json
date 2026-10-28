@@ -1,0 +1,19 @@
+{
+  "name": "@rival/server",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "npm run build && node dist/main.js",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "test": "node --experimental-strip-types --conditions=development --test tests/*.test.ts"
+  },
+  "dependencies": {
+    "@rival/shared": "*",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.5.13"
+  }
+}

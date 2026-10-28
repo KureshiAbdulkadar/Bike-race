@@ -1,0 +1,8 @@
+FAIL · Rematch did not reset lap
+08:22:55  PASS room FGSEJC: two distinct clients and start gating
+08:22:57  PASS readiness, countdown, race HUD, and shared randomized road
+08:23:01  PASS matching-speed contextual kick/punch telegraph and a Space counter
+08:23:06  PASS aligned drafting builds authoritative boost charge
+08:23:07  PASS boost consumes charge and increases speed
+08:25:33  PASS two laps and identical results: 1.  Smoke Blue157.52 s2.  Smoke Red157.67 s
+08:25:35  FAIL · Rematch did not reset lap

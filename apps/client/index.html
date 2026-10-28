@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#10162d" />
+    <title>Rival Riding</title>
+  </head>
+  <body>
+    <div id="app" data-view="home" data-connection="connecting">
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="Rival Riding home"><span class="brand-mark" aria-hidden="true">//</span><span>RIVAL RIDING</span></a>
+        <nav class="topbar-actions" aria-label="Game options">
+          <span class="connection"><i aria-hidden="true"></i><span id="connection-state" role="status">Connecting</span></span>
+          <button class="nav-button" id="open-menu" hidden>Back to menu</button>
+          <button class="nav-button" id="controls-toggle">Controls <kbd>?</kbd></button>
+        </nav>
+      </header>
+      <main class="game-frame" aria-label="Rival Riding game">
+        <canvas id="game-canvas" tabindex="0" aria-label="3D bike racing scene. Use W to accelerate, S to brake, and A and D to steer."></canvas>
+        <div class="scene-caption"><span class="caption-line"></span><div><strong>AFTERGLOW CIRCUIT</strong><span>City loop / 2 laps</span></div><span class="circuit-number">01</span></div>
+        <div class="gameplay-hud">
+          <div class="race-status">
+            <div class="position-card"><span id="position-readout">SOLO</span><small>POSITION</small></div>
+            <div class="lap-indicator"><span id="lap-readout">FREE RIDE</span><time class="race-clock" id="race-clock" hidden>00:00</time></div>
+          </div>
+          <div class="mini-map" id="mini-map" role="img" aria-label="Race minimap" hidden><svg viewBox="0 0 100 100" aria-hidden="true"><path id="map-road" class="map-road" /><path d="M50 7v7m0 72v7" class="map-finish" /><g id="map-riders"></g></svg><small>CIRCUIT 01</small></div>
+          <div class="speed-card"><span class="speed-value" id="speed-value">0</span><span class="speed-unit">KM/H</span><span class="speed-rule"></span></div>
+          <div class="race-meters" id="race-meters" hidden><div class="boost-label"><span aria-hidden="true">ϟ</span><strong>BOOST</strong><kbd>SHIFT</kbd></div><div class="boost-track"><span id="boost-fill"></span></div><small id="boost-help">Draft behind a rival to charge</small></div>
+          <div class="action-dock"><button class="drive-action boost-action" data-control="shift" aria-label="Hold to boost"><span aria-hidden="true">ϟ</span><small>BOOST</small></button><button class="drive-action strike-action" id="action-button" data-control=" " aria-label="Strike, counter, or recover"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M10 22v-8c0-4 5-4 5 0v5-10c0-4 5-4 5 0v10-11c0-4 5-4 5 0v11-8c0-4 5-4 5 0v13l-5 10H14L7 25c-3-5 1-8 4-4l3 3" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/></svg><strong id="action-label">STRIKE</strong><kbd>SPACE</kbd></button></div><div class="touch-driving" aria-label="Touch driving controls"><button data-control="a" aria-label="Steer left">←</button><button data-control="d" aria-label="Steer right">→</button><button data-control="w" aria-label="Accelerate">↑</button><button data-control="s" aria-label="Brake">↓</button></div><div class="combat-prompt" id="combat-prompt" aria-live="polite" hidden></div>
+          <div class="stability-card" id="stability-card" hidden><span>STABILITY</span><div><i id="stability-fill"></i></div></div>
+          <div class="controls-hint"><span><kbd>W</kbd> Accelerate</span><span><kbd>A</kbd><kbd>D</kbd> Steer</span><span id="reset-hint"><kbd>R</kbd> Reset</span></div>
+        </div>
+        <div class="flow-shade" id="flow-shade">
+          <section class="flow-panel home-panel" id="home-panel" aria-labelledby="game-title">
+            <p class="eyebrow"><span></span> 2–6 FRIENDS. ONE FINISH LINE.</p>
+            <h1 id="game-title">RIVAL<br /><em>RIDING<span>.</span></em></h1>
+            <p class="menu-description">Draft. Strike. Boost past your friends.</p>
+            <div class="rider-profile"><div><label class="field-label" for="nickname">YOUR RIDER</label><input id="nickname" maxlength="20" value="Rider" autocomplete="nickname" spellcheck="false" /></div><input id="bike-color" type="hidden" value="#27bfff" /></div>
+            <div class="paint-options" role="group" aria-label="Quick bike colors"><button style="--paint:#27bfff" data-bike-color="#27bfff" aria-label="Electric blue" aria-pressed="true"></button><button style="--paint:#f2315a" data-bike-color="#f2315a" aria-label="Rival red" aria-pressed="false"></button><button style="--paint:#9b6bff" data-bike-color="#9b6bff" aria-label="Violet" aria-pressed="false"></button><button style="--paint:#ffb52e" data-bike-color="#ffb52e" aria-label="Amber" aria-pressed="false"></button><button style="--paint:#52d273" data-bike-color="#52d273" aria-label="Lime" aria-pressed="false"></button><button style="--paint:#f477d0" data-bike-color="#f477d0" aria-label="Pink" aria-pressed="false"></button><span id="selected-paint-label">Electric blue</span></div>
+            <button class="primary-button" id="quick-race" disabled><span>Play online</span><span aria-hidden="true">↗</span></button><p class="quick-note">Quick race · 4 bot rivals fill your grid</p><button class="secondary-button friends-button" id="friends-toggle" aria-expanded="false" aria-controls="friend-options">Play with friends <span aria-hidden="true">+</span></button><section id="friend-options" class="friend-options" hidden><button class="primary-button" id="create-room" disabled><span>Create private room</span><span aria-hidden="true">↗</span></button>
+            <div class="join-row"><label class="sr-only" for="room-code">Six-character room code</label><input id="room-code" maxlength="6" placeholder="ENTER ROOM CODE" autocomplete="off" spellcheck="false" /><button class="secondary-button" id="join-room" disabled>Join <span aria-hidden="true">→</span></button></div>
+            </section><div class="solo-row"><span>Learn the controls</span><button class="text-button" id="free-ride">Practice solo <span aria-hidden="true">→</span></button></div>
+            <p class="flow-message" id="flow-message" role="status">Finding the race server…</p>
+            <button class="text-button" id="retry-connection" hidden>Retry multiplayer connection →</button><p class="menu-footnote">Keyboard play · No account needed</p>
+          </section>
+          <section class="flow-panel" id="lobby-panel" aria-labelledby="lobby-title" hidden>
+            <p class="eyebrow">PRIVATE ROOM <span id="rider-count">1 / 6</span></p><h2 id="lobby-title">The grid<span>.</span></h2><p class="panel-description">Invite your friends. Settle it on the track.</p>
+            <div class="invite-card"><div><small>ROOM CODE</small><strong id="room-code-label">------</strong></div><button class="copy-link" id="copy-link">Copy invite link</button></div>
+            <ul class="player-list" id="player-list" aria-label="Room riders"></ul>
+            <div class="lobby-actions"><button class="secondary-button" id="ready-up">Ready up</button><button class="primary-button" id="start-race" disabled>Start race →</button></div>
+            <p class="flow-message" id="lobby-message" role="status"></p>
+            <div class="panel-footer"><button class="text-button" id="leave-room">← Leave room</button><button class="text-button" id="free-ride-from-lobby">Ride solo</button></div>
+          </section>
+          <section class="flow-panel countdown-panel" id="countdown-panel" aria-label="Race countdown" hidden><p class="eyebrow">YOUR RIVALS ARE READY</p><strong id="countdown-number">3</strong><p>Hold W. Find your line.</p></section>
+          <section class="flow-panel" id="results-panel" aria-labelledby="results-title" hidden><p class="eyebrow">TWO LAPS. ALL SETTLED.</p><h2 id="results-title">Good race<span>.</span></h2><ol class="results-list" id="results-list"></ol><button class="primary-button" id="rematch">Race again ↗</button><button class="text-button results-leave" id="leave-from-results">← Back to menu</button></section>
+        </div>
+        <div class="race-toast" id="race-toast" aria-live="polite"></div>
+      </main>
+      <dialog class="controls-panel" id="controls-panel" aria-labelledby="controls-title"><form method="dialog"><button class="dialog-close" aria-label="Close controls">×</button></form><p class="eyebrow">RIDER HANDBOOK</p><h2 id="controls-title">Find your flow<span>.</span></h2><dl class="bindings"><div><dt>Accelerate / brake</dt><dd><kbd>W</kbd><kbd>S</kbd></dd></div><div><dt>Steer</dt><dd><kbd>A</kbd><kbd>D</kbd></dd></div><div><dt>Boost</dt><dd><kbd>SHIFT</kbd></dd></div><div><dt>Punch / kick / counter</dt><dd><kbd>SPACE</kbd></dd></div><div><dt>Recover</dt><dd><kbd>SPACE</kbd></dd></div><div><dt>Reset solo ride</dt><dd><kbd>R</kbd></dd></div></dl><p class="controls-note">Follow a rival to charge boost. Pull alongside at a similar speed to strike. Press Space or click Strike. The game selects a punch or kick by range; Space also counters and recovers.</p><small>Arrow keys also work. Online races continue while help is open.</small></dialog>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
